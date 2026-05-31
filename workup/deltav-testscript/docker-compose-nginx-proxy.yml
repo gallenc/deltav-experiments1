@@ -1,0 +1,61 @@
+---
+# Delta-V: OpenNMS microservice-mode deployment NGINX proxy configuration
+
+services:
+	
+	
+
+  nl6:
+	environment:
+	  TEMP_REMOVE: remove
+#    ports:
+#      - "19161:161/udp"  # ad-hoc SNMP testing from the host
+#      - "19081:8080/tcp" # web UI + REST API
+    # Pinned IP so the perspective-smoke requisition can target a stable
+    # address. Default Minion routes via the Docker bridge to reach this;
+    # the nl6-lab Minion shares this netns so it sees 172.18.0.30 as
+    # one of its own interfaces (the "perspective" comes from the polling
+    # daemon's RPC dispatch, not the network path).
+#    networks:
+#      default:
+#        ipv4_address: 172.18.0.30
+
+ 
+
+  victoriametrics:
+	environment:
+	  TEMP_REMOVE: remove
+#    ports:
+#      - "18428:8428"
+
+
+  grafana:
+	environment:
+	  TEMP_REMOVE: remove
+#     ports:
+#      - "13000:3000"
+
+
+networks:
+  # Explicit subnet so the test-node containers can be pinned to predictable
+  # IPs that match the foreign-source/foreign-id assignments in the
+  # flow-test requisition. Without this, Docker assigns IPs from an
+  # auto-generated subnet in arrival order, which means the requisition's
+  # static IP-to-node mapping fails to attribute flows correctly in the
+  # Grafana flow sources inventory panel. Subnet matches the historical
+  # Docker default (172.18.0.0/16) so existing services aren't disturbed.
+  #
+  # ip_range confines DYNAMIC allocation to 172.18.1.0/24, keeping it clear
+  # of the static ipv4_address pins in 172.18.0.x (snmp-agent .2, flow test
+  # nodes .20-.22, nl6 .30). Without this, in a large-profile bring-up
+  # the dynamic allocator marches up from .2 and can hand a static-pinned IP
+  # to another container before the pinned service starts, failing it with
+  # "failed to set up container networking: Address already in use".
+  default:
+    name: delta-v_default
+    ipam:
+      driver: default
+      config:
+        - subnet: 172.18.0.0/16
+          ip_range: 172.18.1.0/24
+          gateway: 172.18.0.1
