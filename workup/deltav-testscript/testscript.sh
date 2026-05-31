@@ -12,10 +12,8 @@ select yn in "Yes" "No"; do
     esac
 done
 
-cd ./target 
-
-rm -rf ./delta-v-smoke
-mkdir -p ./delta-v-smoke && cd ./delta-v-smoke
+rm -rf ./target/delta-v-smoke
+mkdir -p ./target/delta-v-smoke 
 
 #GIT_REF=v1.2.0-rc2.2
 #IMG_TAG=1.2.0-rc2.2
@@ -32,10 +30,10 @@ IMG_TAG=1.3.0-rc3
 
 BASE=https://raw.githubusercontent.com/pbrane/delta-v/$GIT_REF/opennms-container/delta-v
 
-curl -OL $BASE/docker-compose.yml
-curl -OL $BASE/docker-compose.dev.yml
+curl -OL --output-dir "./target/delta-v-smoke/" $BASE/docker-compose.yml
+curl -OL --output-dir "./target/delta-v-smoke/" $BASE/docker-compose.dev.yml
 
-cat > .env <<EOF
+cat > ./target/delta-v-smoke/.env <<EOF
 IMAGE_PREFIX=ghcr.io/pbrane
 VERSION=$IMG_TAG
 EOF
