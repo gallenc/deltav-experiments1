@@ -3,8 +3,8 @@
 echo "WARNING: Do you wish to prune all docker images first (you really dont want to do this on every run)?"
 select yn in "Yes" "No"; do
     case $yn in
-        Yes ) echo "Pruning docker images" 
-              docker rm -f $(docker ps -aq) 2>/dev/null 
+        Yes ) echo "Pruning docker images"
+              docker rm -f $(docker ps -aq) 2>/dev/null
               docker volume rm -f $(docker volume ls -q) 2>/dev/null
               docker system prune -a --volumes -f
               break;;
@@ -13,13 +13,13 @@ select yn in "Yes" "No"; do
 done
 
 rm -rf ./target/delta-v-smoke
-mkdir -p ./target/delta-v-smoke 
-
+mkdir -p ./target/delta-v-smoke
+ 
 # Configure version variables
-$GIT_REF = "v1.3.0"
-$IMG_TAG = "1.3.0"
+GIT_REF="v1.3.0"
+IMG_TAG="1.3.0"
 
-$BASE = "https://raw.githubusercontent.com/pbrane/delta-v/$GIT_REF/deploy"
+BASE="https://raw.githubusercontent.com/pbrane/delta-v/$GIT_REF/deploy"
 
 curl -OL --output-dir "./target/delta-v-smoke/" $BASE/compose.yml
 curl -OL --output-dir "./target/delta-v-smoke/" $BASE/compose.override.dev.yml
