@@ -1,6 +1,37 @@
 ---
 # Delta-V: OpenNMS microservice-mode deployment NGINX proxy configuration
 
+networks:
+     # Explicit subnet so the test-node containers can be pinned to predictable
+     # IPs that match the foreign-source/foreign-id assignments in the
+     # flow-test requisition. Without this, Docker assigns IPs from an
+     # auto-generated subnet in arrival order, which means the requisition's
+     # static IP-to-node mapping fails to attribute flows correctly in the
+     # Grafana flow sources inventory panel. Subnet matches the historical
+     # Docker default (172.18.0.0/16) so existing services aren't disturbed.
+     #
+     # ip_range confines DYNAMIC allocation to 172.18.1.0/24, keeping it clear
+     # of the static ipv4_address pins in 172.18.0.x (snmp-agent .2, flow test
+     # nodes .20-.22, nl6 .30). Without this, in a large-profile bring-up
+     # the dynamic allocator marches up from .2 and can hand a static-pinned IP
+     # to another container before the pinned service starts, failing it with
+     # "failed to set up container networking: Address already in use".
+     default:
+       name: delta-v_default
+       ipam:
+         driver: default
+         config:
+           - subnet: 172.18.0.0/16
+             ip_range: 172.18.1.0/24
+             gateway: 172.18.0.1
+             
+volumes:
+   # vhost:
+   conf: {}
+   html: {}
+   certs: {}
+   acme: {}
+
 services:
 
     nginx:
@@ -17,12 +48,12 @@ services:
         - conf:/etc/nginx/conf.d
         - html:/usr/share/nginx/html
         #- certs:/etc/nginx/certs:ro
-        - "./container-fs/acme-companion/certs:/etc/nginx/certs:ro"
+        - "../../container-fs/acme-companion/certs:/etc/nginx/certs:ro"
       labels: 
           # see https://github.com/nginx-proxy/nginx-proxy/blob/main/docs/README.md#network-segregation
           - "com.github.nginx-proxy.nginx-proxy.nginx"
       networks:
-        delta-v_default:
+        default:
           ipv4_address: 172.18.0.5
 
     nginx-gen:
@@ -31,7 +62,7 @@ services:
       container_name: nginx-gen
       volumes:
         - "/var/run/docker.sock:/tmp/docker.sock:ro"
-        - "./container-fs/nginx-gen/templates/nginx.tmpl:/etc/docker-gen/templates/nginx.tmpl:ro"
+        - "../../container-fs/nginx-gen/templates/nginx.tmpl:/etc/docker-gen/templates/nginx.tmpl:ro"
       volumes_from:
         - nginx
       command: -notify-sighup nginx -watch -wait 5s:30s /etc/docker-gen/templates/nginx.tmpl /etc/nginx/conf.d/default.conf
@@ -43,7 +74,7 @@ services:
       volumes_from:
         - nginx
       volumes:
-        - "./container-fs/acme-companion/certs:/etc/nginx/certs:rw"
+        - "../../container-fs/acme-companion/certs:/etc/nginx/certs:rw"
         #- certs:/etc/nginx/certs:rw
         - acme:/etc/acme.sh
         - /var/run/docker.sock:/var/run/docker.sock:ro
@@ -53,12 +84,17 @@ services:
         # - ACME_CA_URI=https://acme-v02.api.letsencrypt.org/directory # production
         - ACME_CA_URI=https://acme-staging-v02.api.letsencrypt.org/directory # staging
       networks:
-          delta-v_default:
+          default:
             ipv4_address: 172.18.0.6
 
     nl6:
       environment:
-         TEMP_REMOVE: remove
+        - VIRTUAL_HOST=${API_VIRTUAL_HOST:-localhost}
+        - VIRTUAL_NETWORK=delta-v_default
+        - VIRTUAL_PATH=/nl6/
+        - VIRTUAL_PORT=8080
+        - LETSENCRYPT_HOST=${ENV_LETSENCRYPT_HOST:-localhost}
+        - LETSENCRYPT_EMAIL=${ENV_LETSENCRYPT_EMAIL:-email@example.com}
 #    ports:
 #      - "19161:161/udp"  # ad-hoc SNMP testing from the host
 #      - "19081:8080/tcp" # web UI + REST API
@@ -75,7 +111,13 @@ services:
 
     victoriametrics:
       environment:
-         TEMP_REMOVE: remove
+        - VIRTUAL_HOST=${API_VIRTUAL_HOST:-localhost}
+        - VIRTUAL_NETWORK=delta-v_default
+        - VIRTUAL_PATH=/victoriametrics/
+        - VIRTUAL_DEST=/
+        - VIRTUAL_PORT=8428
+        - LETSENCRYPT_HOST=${ENV_LETSENCRYPT_HOST:-localhost}
+        - LETSENCRYPT_EMAIL=${ENV_LETSENCRYPT_EMAIL:-email@example.com}
 
 #    ports:
 #      - "18428:8428"
@@ -83,31 +125,19 @@ services:
 
     grafana:
       environment:
-         TEMP_REMOVE: remove
+        
+        - GF_SERVER_HTTP_PORT=3000
+        - GF_SERVER_PROTOCOL=http
+        - GF_SERVER_DOMAIN=${API_VIRTUAL_HOST:-localhost}:80
+        - GF_SERVER_ROOT_URL=http://${API_VIRTUAL_HOST:-localhost}:80/grafana/
+        - GF_SERVER_SERVER_FROM_SUB_PATH=true
+
+        - VIRTUAL_HOST=${API_VIRTUAL_HOST:-localhost}
+        - VIRTUAL_NETWORK=delta-v_default
+        - VIRTUAL_PATH=/grafana/
+        - VIRTUAL_DEST=/
+        - VIRTUAL_PORT=3000
+        - LETSENCRYPT_HOST=${ENV_LETSENCRYPT_HOST:-localhost}
+        - LETSENCRYPT_EMAIL=${ENV_LETSENCRYPT_EMAIL:-email@example.com}
 #     ports:
 #      - "13000:3000"
-
-
-networks:
-  # Explicit subnet so the test-node containers can be pinned to predictable
-  # IPs that match the foreign-source/foreign-id assignments in the
-  # flow-test requisition. Without this, Docker assigns IPs from an
-  # auto-generated subnet in arrival order, which means the requisition's
-  # static IP-to-node mapping fails to attribute flows correctly in the
-  # Grafana flow sources inventory panel. Subnet matches the historical
-  # Docker default (172.18.0.0/16) so existing services aren't disturbed.
-  #
-  # ip_range confines DYNAMIC allocation to 172.18.1.0/24, keeping it clear
-  # of the static ipv4_address pins in 172.18.0.x (snmp-agent .2, flow test
-  # nodes .20-.22, nl6 .30). Without this, in a large-profile bring-up
-  # the dynamic allocator marches up from .2 and can hand a static-pinned IP
-  # to another container before the pinned service starts, failing it with
-  # "failed to set up container networking: Address already in use".
-  default:
-    name: delta-v_default
-    ipam:
-      driver: default
-      config:
-        - subnet: 172.18.0.0/16
-          ip_range: 172.18.1.0/24
-          gateway: 172.18.0.1
