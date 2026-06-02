@@ -31,6 +31,8 @@ volumes:
    html: {}
    certs: {}
    acme: {}
+   
+   data-pgadmin: {}
 
 services:
 
@@ -86,12 +88,38 @@ services:
       networks:
           default:
             ipv4_address: 172.18.0.6
+            
+    pgadmin:
+      image: dpage/pgadmin4
+      container_name: pgadmin
+      restart: always
+      ports:
+         - "8888:80"
+      environment:
+        - PGADMIN_DEFAULT_EMAIL=user-name@domain-name.com
+        - PGADMIN_DEFAULT_PASSWORD=minad1234
+        - PGADMIN_SERVER_JSON_FILE=/pgadmin/servers.json
+        - SCRIPT_NAME=/pgadmin
+        
+        - VIRTUAL_HOST=${API_VIRTUAL_HOST:-localhost}
+        - VIRTUAL_NETWORK=delta-v_default
+        - VIRTUAL_PATH=/pgadmin/
+        - VIRTUAL_DEST=/pgadmin/
+        - VIRTUAL_PORT=80
+        - LETSENCRYPT_HOST=${ENV_LETSENCRYPT_HOST:-localhost}
+        - LETSENCRYPT_EMAIL=${ENV_LETSENCRYPT_EMAIL:-email@example.com}
+      volumes:
+       - data-pgadmin:/var/lib/pgadmin
+       - ./container-fs/pgadmin/:/pgadmin
+      networks:
+         default:
 
     nl6:
       environment:
         - VIRTUAL_HOST=${API_VIRTUAL_HOST:-localhost}
         - VIRTUAL_NETWORK=delta-v_default
         - VIRTUAL_PATH=/nl6/
+        - VIRTUAL_DEST=/
         - VIRTUAL_PORT=8080
         - LETSENCRYPT_HOST=${ENV_LETSENCRYPT_HOST:-localhost}
         - LETSENCRYPT_EMAIL=${ENV_LETSENCRYPT_EMAIL:-email@example.com}
