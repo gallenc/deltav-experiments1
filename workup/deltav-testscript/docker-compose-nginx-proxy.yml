@@ -47,11 +47,19 @@ services:
         # The vhost volume is only required if you
         # plan to obtain standalone certificates
         # - vhost:/etc/nginx/vhost.d
-        - conf:/etc/nginx/conf.d
-        - html:/usr/share/nginx/html
-        - ../../container-fs/nginx/html/index.html:/usr/share/nginx/html/index.html
+        # - html:/usr/share/nginx/html
         #- certs:/etc/nginx/certs:ro
+        - conf:/etc/nginx/conf.d
+        - ../../container-fs/nginx/vhost.d:/etc/nginx/vhost.d
+        - ../../container-fs/nginx/html/index.html:/usr/share/nginx/html/index.html
         - ../../container-fs/acme-companion/certs:/etc/nginx/certs:ro
+        
+      environment:
+        - VIRTUAL_HOST=${API_VIRTUAL_HOST:-localhost}
+        - VIRTUAL_NETWORK=delta-v_default
+        - VIRTUAL_PATH=/
+        - VIRTUAL_DEST=/
+        - VIRTUAL_PORT=80
       labels: 
           # see https://github.com/nginx-proxy/nginx-proxy/blob/main/docs/README.md#network-segregation
           - "com.github.nginx-proxy.nginx-proxy.nginx"
@@ -145,10 +153,11 @@ services:
          default:
 
     nl6:
+      ## needs some work not returning all values correctly
       environment:
         - VIRTUAL_HOST=${API_VIRTUAL_HOST:-localhost}
         - VIRTUAL_NETWORK=delta-v_default
-        - VIRTUAL_PATH=/nl6/
+        - VIRTUAL_PATH=/web/
         - VIRTUAL_DEST=/web/
         - VIRTUAL_PORT=8080
         - LETSENCRYPT_HOST=${ENV_LETSENCRYPT_HOST:-localhost}
