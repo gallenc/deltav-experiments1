@@ -49,8 +49,9 @@ services:
         # - vhost:/etc/nginx/vhost.d
         - conf:/etc/nginx/conf.d
         - html:/usr/share/nginx/html
+        - ../../container-fs/nginx/html/index.html:/usr/share/nginx/html/index.html
         #- certs:/etc/nginx/certs:ro
-        - "../../container-fs/acme-companion/certs:/etc/nginx/certs:ro"
+        - ../../container-fs/acme-companion/certs:/etc/nginx/certs:ro
       labels: 
           # see https://github.com/nginx-proxy/nginx-proxy/blob/main/docs/README.md#network-segregation
           - "com.github.nginx-proxy.nginx-proxy.nginx"
@@ -113,13 +114,42 @@ services:
        - ./container-fs/pgadmin/:/pgadmin
       networks:
          default:
+         
+    kafka-ui:
+      image: provectuslabs/kafka-ui:${KAFKA_UI_VERSION:-latest}
+      container_name: kafka-ui
+      hostname: kafka-ui
+      depends_on:
+        kafka:
+          condition: service_started
+      environment:
+        - TZ=${TIMEZONE:-America/New_York}
+        - KAFKA_CLUSTERS_0_NAME=delta-v-kafka-cluster
+        - KAFKA_CLUSTERS_0_BOOTSTRAPSERVERS=kafka:9092
+        - KAFKA_CLUSTERS_0_ZOOKEEPER=zookeeper:2181
+        - SERVER_SERVLET_CONTEXT_PATH=/kafka-ui
+        - AUTH_TYPE="LOGIN_FORM"
+        - SPRING_SECURITY_USER_NAME=admin
+        - SPRING_SECURITY_USER_PASSWORD=minad1234
+        
+        - VIRTUAL_HOST=${API_VIRTUAL_HOST:-localhost}
+        - VIRTUAL_NETWORK=delta-v_default
+        - VIRTUAL_PATH=/kafka-ui/
+        - VIRTUAL_DEST=/kafka-ui/
+        - VIRTUAL_PORT=8080
+        - LETSENCRYPT_HOST=${ENV_LETSENCRYPT_HOST:-localhost}
+        - LETSENCRYPT_EMAIL=${ENV_LETSENCRYPT_EMAIL:-email@example.com}
+      ports:
+        - "28080:8080/tcp"
+      networks:
+         default:
 
     nl6:
       environment:
         - VIRTUAL_HOST=${API_VIRTUAL_HOST:-localhost}
         - VIRTUAL_NETWORK=delta-v_default
         - VIRTUAL_PATH=/nl6/
-        - VIRTUAL_DEST=/
+        - VIRTUAL_DEST=/web/
         - VIRTUAL_PORT=8080
         - LETSENCRYPT_HOST=${ENV_LETSENCRYPT_HOST:-localhost}
         - LETSENCRYPT_EMAIL=${ENV_LETSENCRYPT_EMAIL:-email@example.com}
