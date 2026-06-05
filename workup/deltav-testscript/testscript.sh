@@ -1,6 +1,6 @@
 #!/bin/bash
 
-echo "Do you wish to prune all docker images first?"
+echo "WARNING: Do you wish to prune all docker images first (you really dont want to do this on every run)?"
 select yn in "Yes" "No"; do
     case $yn in
         Yes ) echo "Pruning docker images" 
@@ -12,9 +12,7 @@ select yn in "Yes" "No"; do
     esac
 done
 
-
 cd ./target 
-
 
 rm -rf ./delta-v-smoke
 mkdir -p ./delta-v-smoke && cd ./delta-v-smoke
@@ -42,8 +40,9 @@ IMAGE_PREFIX=ghcr.io/pbrane
 VERSION=$IMG_TAG
 EOF
 
-docker compose -f docker-compose.yml -f docker-compose.dev.yml --profile full --profile metrics pull
-docker compose -f docker-compose.yml -f docker-compose.dev.yml --profile full --profile metrics up -d
+docker compose -f ./target/delta-v-smoke/docker-compose.yml -f ./target/delta-v-smoke/docker-compose.dev.yml -f docker-compose-nginx-proxy.yml --profile full --profile metrics pull
+
+docker compose -f ./target/delta-v-smoke/docker-compose.yml -f ./target/delta-v-smoke/docker-compose.dev.yml -f docker-compose-nginx-proxy.yml --profile full --profile metrics up -d
 
 # --- Print all browser-accessible URLs ---
 HOST_IP="$(hostname -I 2>/dev/null | awk '{print $1}')"
@@ -55,6 +54,13 @@ cat <<EOF
  Delta-V $IMG_TAG is starting on $HOST_IP
 ==============================================================
 
+ Nginx ingress controller   http://$HOST_IP:80
+ (this provides a welcome page with links to all observability UI services through a reverse proxy)
+ 
+ Admin tools
+   pgAdmin                http://$HOST_IP:15432           (admin/admin)
+   kafkaUI                http://$HOST_IP:19092/ui        (admin/admin)
+   
  Observability
    Grafana                http://$HOST_IP:13000           (admin/admin)
    VictoriaMetrics UI     http://$HOST_IP:18428
@@ -76,5 +82,9 @@ cat <<EOF
    Trapd / Syslog / Flow  $HOST_IP:11162/udp, 1514/udp, 4729/udp
 
  Tip: 'docker compose ps' to watch health; Grafana takes ~30-60s to come up.
+ 
+ To shutdown in this directory, use:
+ docker compose -f ./target/delta-v-smoke/docker-compose.yml -f ./target/delta-v-smoke/docker-compose.dev.yml -f docker-compose-nginx-proxy.yml --profile full --profile metrics down
+
 ==============================================================
 EOF
