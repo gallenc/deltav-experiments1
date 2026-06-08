@@ -38,9 +38,9 @@ IMAGE_PREFIX=ghcr.io/pbrane
 VERSION=$IMG_TAG
 EOF
 
-docker compose -f ./target/delta-v-smoke/docker-compose.yml -f ./target/delta-v-smoke/docker-compose.dev.yml -f docker-compose-nginx-proxy.yml --profile full --profile metrics pull
+docker compose -f ./target/delta-v-smoke/compose.yml -f ./target/delta-v-smoke/compose.override.dev.yml -f docker-compose-nginx-proxy.yml --profile full --profile metrics pull
 
-docker compose -f ./target/delta-v-smoke/docker-compose.yml -f ./target/delta-v-smoke/docker-compose.dev.yml -f docker-compose-nginx-proxy.yml --profile full --profile metrics up -d
+docker compose -f ./target/delta-v-smoke/compose.yml -f ./target/delta-v-smoke/compose.override.dev.yml -f docker-compose-nginx-proxy.yml --profile full --profile metrics up -d
 
 # --- Print all browser-accessible URLs ---
 HOST_IP="$(hostname -I 2>/dev/null | awk '{print $1}')"
@@ -82,7 +82,8 @@ cat <<EOF
  Tip: 'docker compose ps' to watch health; Grafana takes ~30-60s to come up.
  
  To shutdown in this directory, use:
- docker compose -f ./target/delta-v-smoke/docker-compose.yml -f ./target/delta-v-smoke/docker-compose.dev.yml -f docker-compose-nginx-proxy.yml --profile full --profile metrics down
+ 
+ docker compose -f ./target/delta-v-smoke/compose.yml -f ./target/delta-v-smoke/compose.override.dev.yml -f docker-compose-nginx-proxy.yml --profile full --profile metrics down
 
 ==============================================================
 EOF

@@ -51,17 +51,17 @@ Once the smoke test files are downloaded ,you can start and stop the app directl
 Bring Up:
 
 ```
-docker compose -f ./target/delta-v-smoke/docker-compose.yml -f ./target/delta-v-smoke/docker-compose.dev.yml -f docker-compose-nginx-proxy.yml --profile full --profile metrics up -d
+docker compose -f ./target/delta-v-smoke/compose.yml -f ./target/delta-v-smoke/compose.override.dev.yml -f docker-compose-nginx-proxy.yml --profile full --profile metrics up -d
 ```
 
 Shut down:
 
 ```
-docker compose -f ./target/delta-v-smoke/docker-compose.yml -f ./target/delta-v-smoke/docker-compose.dev.yml -f docker-compose-nginx-proxy.yml --profile full --profile metrics down
+docker compose -f ./target/delta-v-smoke/compose.yml -f ./target/delta-v-smoke/compose.override.dev.yml -f docker-compose-nginx-proxy.yml --profile full --profile metrics down
 ```
 
 If you want to completely remove ONLY the containers associated with this project from your system, you can use the following command:
 
 ```
-docker compose -f ./target/delta-v-smoke/docker-compose.yml -f ./target/delta-v-smoke/docker-compose.dev.yml -f docker-compose-nginx-proxy.yml --profile full --profile metrics down -v --rmi all 
+docker compose -f ./target/delta-v-smoke/compose.yml -f ./target/delta-v-smoke/compose.override.dev.yml -f docker-compose-nginx-proxy.yml --profile full --profile metrics down -v --rmi all 
 ```

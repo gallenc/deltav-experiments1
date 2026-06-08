@@ -35,25 +35,15 @@ New-Item -ItemType Directory -Path .\target\delta-v-smoke | Out-Null
 #Set-Location .\target\delta-v-smoke
 
 # Configure version variables
-#$GIT_REF = "v1.2.0-rc2.2"
-#$IMG_TAG = "1.2.0-rc2.2"
-#$GIT_REF = "v1.2.0-rc3"
-#$IMG_TAG = "1.2.0-rc3"
-#$GIT_REF = "v1.2.0-rc4"
-#$IMG_TAG = "1.2.0-rc4"
-#$GIT_REF = "v1.2.0-rc4.1"
-#$IMG_TAG = "1.2.0-rc4.1"
-#$GIT_REF = "v1.2.0"
-#$IMG_TAG = "1.2.0"
-$GIT_REF = "v1.3.0-rc3"
-$IMG_TAG = "1.3.0-rc3"
+$GIT_REF = "v1.3.0"
+$IMG_TAG = "1.3.0"
 
-$BASE = "https://raw.githubusercontent.com/pbrane/delta-v/$GIT_REF/opennms-container/delta-v"
+$BASE = "https://raw.githubusercontent.com/pbrane/delta-v/$GIT_REF/deploy"
 
 # Download docker-compose files
 Write-Host "Downloading docker-compose files from $BASE..."
-Invoke-WebRequest -Uri "$BASE/docker-compose.yml" -OutFile ".\target\delta-v-smoke\docker-compose.yml"
-Invoke-WebRequest -Uri "$BASE/docker-compose.dev.yml" -OutFile ".\target\delta-v-smoke\docker-compose.dev.yml"
+Invoke-WebRequest -Uri "$BASE/compose.yml" -OutFile ".\target\delta-v-smoke\compose.yml"
+Invoke-WebRequest -Uri "$BASE/compose.override.dev.yml" -OutFile ".\target\delta-v-smoke\compose.override.dev.yml"
 
 # Create .env file
 $envContent = @"
@@ -64,10 +54,10 @@ Set-Content -Path ".\target\delta-v-smoke\.env" -Value $envContent
 
 # Pull and start containers
 Write-Host "Pulling containers..."
-docker compose -f ./target/delta-v-smoke/docker-compose.yml -f ./target/delta-v-smoke/docker-compose.dev.yml -f docker-compose-nginx-proxy.yml --profile full --profile metrics pull
+docker compose -f ./target/delta-v-smoke/compose.yml -f ./target/delta-v-smoke/compose.override.dev.yml -f docker-compose-nginx-proxy.yml --profile full --profile metrics pull
 
 Write-Host "Starting containers..."
-docker compose -f ./target/delta-v-smoke/docker-compose.yml -f ./target/delta-v-smoke/docker-compose.dev.yml -f docker-compose-nginx-proxy.yml --profile full --profile metrics up -d
+docker compose -f ./target/delta-v-smoke/compose.yml -f ./target/delta-v-smoke/compose.override.dev.yml -f docker-compose-nginx-proxy.yml --profile full --profile metrics up -d
 
 # Determine host IP (IPv4)
 $HOST_IP = $null
@@ -124,9 +114,13 @@ $output = @"
    Trapd / Syslog / Flow  $($HOST_IP):11162/udp, 1514/udp, 4729/udp
 
  Tip: 'docker compose ps' to watch health; Grafana takes ~30-60s to come up.
+ 
+ Track 3 (alarms-materializer): no host port — check health with
+   'docker compose ps alarms-materializer'; its metrics appear in Grafana/VM
+   (deltav_alarms_materializer_*). Default persistence.mode is 'dual-write'.
 
  To shutdown in this directory, use:
- docker compose -f ./target/delta-v-smoke/docker-compose.yml -f ./target/delta-v-smoke/docker-compose.dev.yml -f docker-compose-nginx-proxy.yml --profile full --profile metrics down
+ docker compose -f ./target/delta-v-smoke/compose.yml -f ./target/delta-v-smoke/compose.override.dev.yml -f docker-compose-nginx-proxy.yml --profile full --profile metrics down
 
 ==============================================================
 "@
