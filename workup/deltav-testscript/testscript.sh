@@ -15,23 +15,14 @@ done
 rm -rf ./target/delta-v-smoke
 mkdir -p ./target/delta-v-smoke 
 
-#GIT_REF=v1.2.0-rc2.2
-#IMG_TAG=1.2.0-rc2.2
-#GIT_REF=v1.2.0-rc3
-#IMG_TAG=1.2.0-rc3
-#GIT_REF=v1.2.0-rc4
-#IMG_TAG=1.2.0-rc4
-#GIT_REF=v1.2.0-rc4.1
-#IMG_TAG=1.2.0-rc4.1
-#GIT_REF=v1.2.0
-#IMG_TAG=1.2.0
-GIT_REF=v1.3.0-rc3
-IMG_TAG=1.3.0-rc3
+# Configure version variables
+$GIT_REF = "v1.3.0"
+$IMG_TAG = "1.3.0"
 
-BASE=https://raw.githubusercontent.com/pbrane/delta-v/$GIT_REF/opennms-container/delta-v
+$BASE = "https://raw.githubusercontent.com/pbrane/delta-v/$GIT_REF/deploy"
 
-curl -OL --output-dir "./target/delta-v-smoke/" $BASE/docker-compose.yml
-curl -OL --output-dir "./target/delta-v-smoke/" $BASE/docker-compose.dev.yml
+curl -OL --output-dir "./target/delta-v-smoke/" $BASE/compose.yml
+curl -OL --output-dir "./target/delta-v-smoke/" $BASE/compose.override.dev.yml
 
 cat > ./target/delta-v-smoke/.env <<EOF
 IMAGE_PREFIX=ghcr.io/pbrane
@@ -81,6 +72,10 @@ cat <<EOF
 
  Tip: 'docker compose ps' to watch health; Grafana takes ~30-60s to come up.
  
+ Track 3 (alarms-materializer): no host port — check health with
+   'docker compose ps alarms-materializer'; its metrics appear in Grafana/VM
+   (deltav_alarms_materializer_*). Default persistence.mode is 'dual-write'.
+
  To shutdown in this directory, use:
  
  docker compose -f ./target/delta-v-smoke/compose.yml -f ./target/delta-v-smoke/compose.override.dev.yml -f docker-compose-nginx-proxy.yml --profile full --profile metrics down
